@@ -1,0 +1,54 @@
+# GLOBAL BUILD OPTIONS
+EMBED_CL=1
+
+# OPENCL TO HEADER CONVERSION
+OPENCL2INCLUDE=../cl2include.sh
+
+# COMPILER
+ifeq ($(CXX), icc)
+CXX = icc
+override CXXFLAGS += -O2
+override CXXFLAGS += -Wall -Wcheck
+else
+CXX = g++
+override CXXFLAGS += -O2
+override CXXFLAGS += -Wall -Wextra -Werror -pedantic -Wno-variadic-macros
+endif
+LOG_LEVEL = LOG_WARN
+override CXXFLAGS += -DLOG_LEVEL=$(LOG_LEVEL)
+override CXXFLAGS += -fPIC
+
+# COMMON INCLUDE
+override INCLUDEDIR += -I ../common
+override INCLUDEDIR += -I ../../inc
+# COMMON LIBS
+override LIB = -L../../lib -lclwrapper
+
+# COMMON CLEANUP
+CLEAN = log.txt *.o
+
+# OPENCL LIBRARIES BASED ON OS
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+OPENCL_LIB = -framework OpenCL
+OPENCL_INC =
+SHARED = -dynamiclib
+endif
+
+ifeq ($(UNAME), Linux)
+.PHONY: .check-env
+AMDAPP ?= /opt/AMDAPP/include
+.check-env:
+	@if [ ! -d "${AMDAPP}" ]; then \
+		echo "ERROR: set AMDAPP variable."; exit 1; \
+	fi
+OPENCL_LIB = -lOpenCL
+OPENCL_INC = -I ${AMDAPP}
+SHARED = -shared
+endif
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(OPENCL_INC) $(INCLUDEDIR) -c $^ -o $@
+
+%.cl.h: %.cl
+	$(OPENCL2INCLUDE) $< $@
