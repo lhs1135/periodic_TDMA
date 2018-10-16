@@ -1,5 +1,5 @@
 #include <cstdio>
-#include "PCR_Device_functions.cuh"
+#include "PCR_Device_Functions.cuh"
 
 __global__ void list_print(int nmax, float * in) {
     int i = blockIdx.x*blockDim.x + threadIdx.x;
@@ -20,6 +20,11 @@ __global__ void Solve_Kernel(
     float a1, b1, c1, d1;
     float k01, k21, c01, a21, d01, d21;
 
+
+	// Please Check! My code is right!
+//	float flist[sizeof(alist)/alist[0]];
+	//
+
     bool next_or_ot = true;
     int accum;
 
@@ -32,14 +37,14 @@ __global__ void Solve_Kernel(
             // 1    for updating 'a'
             if ((idx_row - stride)<0) {
             // 1.1  if it is the 'first' line
-                a1 = 0.0f;
+                a1 = alist[idx_row];
                 k01 = 0.0f;
                 c01 = 0.0f;
                 d01 = 0.0f;
             } else if ((idx_row - next_stride)<0) {
             // 1.2  if no place for 'a'
-                a1 = 0.0f;
                 k01 = alist[idx_row]/blist[idx_row - stride];
+                a1 = -alist[idx_row]*k01;
                 c01 = clist[idx_row - stride]*k01;
                 d01 = dlist[idx_row - stride]*k01;
             } else {
@@ -53,14 +58,15 @@ __global__ void Solve_Kernel(
             // 2    for updating 'c'
             if ((idx_row + stride)>row_max) {
             // 2.1  if it is the 'last' line
-                c1 = 0.0f;
+                c1 = clist[idx_row];
                 k21 = 0.0f;
                 a21 = 0.0f;
                 d21 = 0.0f;
             } else if ((idx_row + next_stride)>row_max) {
-                c1 = 0.0f;
+              //  c1 = 0.0f;
                 k21 = clist[idx_row]/blist[idx_row + stride];
-                a21 = alist[idx_row + stride]*k21;
+                c1 = -clist[idx_row]*k21;
+				a21 = alist[idx_row + stride]*k21;
                 d21 = dlist[idx_row + stride]*k21;
             } else {
                 k21 = clist[idx_row]/blist[idx_row + stride];
